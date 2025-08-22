@@ -1,6 +1,6 @@
 <script setup>
 import axios from 'axios'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 const baseUrl = 'https://todolist-api.hexschool.io'
 const signUpRes = ref('')
@@ -18,12 +18,21 @@ const userSignIn = ref({
   nickname: '',
   uid: '',
 })
+const signupError = ref({
+  email: '',
+  password: '',
+})
 
 const signUp = async () => {
   try {
     const res = await axios.post(`${baseUrl}/users/sign_up`, signupField.value)
     signUpRes.value = res.data.uid
     alert('註冊成功')
+    signupField.value = {
+      email: '',
+      password: '',
+      nickname: '',
+    }
   } catch (error) {
     console.log(error)
   }
@@ -34,8 +43,17 @@ const signIn = async () => {
     signInRes.value = res.data
     document.cookie = `customToken=${res.data.token};`
     alert('登入成功')
+    signinField.value = {
+      email: '',
+      password: '',
+    }
   } catch (error) {
     console.log(error)
+    alert('帳號或密碼錯誤')
+    signinField.value = {
+      email: '',
+      password: '',
+    }
   }
 }
 // 驗證登入
@@ -50,6 +68,32 @@ onMounted(async () => {
   userSignIn.value = res.data
   console.log(res)
 })
+
+watch(
+  () => signupField.value.email,
+  (newValue) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (newValue === '') {
+      signupError.value.email = ''
+    } else if (!emailRegex.test(newValue)) {
+      signupError.value.email = '資料格式不正確'
+    } else {
+      signupError.value.email = ''
+    }
+  },
+)
+watch(
+  () => signupField.value.password,
+  (newValue) => {
+    if (newValue === '') {
+      signupError.value.password = ''
+    } else if (newValue.length < 6) {
+      signupError.value.password = '密碼長度至少需要 6 個字元'
+    } else {
+      signupError.value.password = ''
+    }
+  },
+)
 </script>
 <template>
   <div class="m-5">
@@ -67,6 +111,9 @@ onMounted(async () => {
           v-model="signupField.email"
           autocomplete="current-emailSignUp"
         />
+        <span v-if="signupError.email" class="text-red-500 text-xs p-2">{{
+          signupError.email
+        }}</span>
       </div>
       <div class="mt-2">
         <label for="passwordSignUp" class="block">Password</label>
@@ -78,6 +125,9 @@ onMounted(async () => {
           v-model="signupField.password"
           autocomplete="current-password"
         />
+        <span v-if="signupError.password" class="text-red-500 text-xs p-2">{{
+          signupError.password
+        }}</span>
       </div>
       <div class="mt-2">
         <label for="nicknameSignUp" class="block">nickname</label>
